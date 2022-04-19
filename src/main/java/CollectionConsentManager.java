@@ -1,8 +1,8 @@
 /**Personal Data Access Control System
- *ConsentManager class
+ * CollectionConsentManager class
  *
- * Implements the transactions to Consent SCs in the blockchain.
- * Also implements a menu to interact with all SC methods.
+ * Implements the transactions needed to interact with the Collection Consent SCs deployed in the blockchain.
+ * Also implements a menu to use all SC methods.
  *
  * Author: Cristòfol Daudén Esmel
  */
@@ -11,57 +11,59 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.ClientTransactionManager;
 import org.web3j.tx.gas.DefaultGasProvider;
-import src.main.java.contracts.Consent;
-import src.main.java.contracts.Purpose;
+import src.main.java.contracts.CollectionConsent;
+import src.main.java.contracts.ProcessingConsent;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
-public class ConsentManager {
+public class CollectionConsentManager {
 
-    private static ConsentManager manageConsent = null;
+    private static CollectionConsentManager manageConsent = null;
     private Web3j web3j;
     private DefaultGasProvider gasProvider;
 
     public int gasUsed;
 
-    private ArrayList<Consent> consentContractList;
+    private ArrayList<CollectionConsent> collectionConsentContractList;
     Scanner sn;
     Random rand;
 
     enum PURPOSE { ModelTraining, ModelTesting, Profiling, ImprovingService, Advertising };
-    private static PurposeManager purposeManager;
+    private static ProcessingConsentManager purposeManager;
 
-    public  static ConsentManager getConsentManager(Web3j web3j, DefaultGasProvider gasProvider ) {
+    public  static CollectionConsentManager getConsentManager(Web3j web3j, DefaultGasProvider gasProvider ) {
         if (manageConsent==null) {
-            manageConsent = new ConsentManager( web3j, gasProvider );
+            manageConsent = new CollectionConsentManager( web3j, gasProvider );
         }
         return manageConsent;
     }
 
-    private ConsentManager(Web3j web3j, DefaultGasProvider gasProvider ){
+    private CollectionConsentManager(Web3j web3j, DefaultGasProvider gasProvider ){
         this.web3j = web3j;
         this.gasProvider = gasProvider;
 
-        this.consentContractList = new ArrayList<>();
+        this.collectionConsentContractList = new ArrayList<>();
         sn = new Scanner(System.in);
         rand = new Random();
         gasUsed = 0;
 
-        purposeManager = PurposeManager.getPurposeManager(web3j, gasProvider);
+        purposeManager = ProcessingConsentManager.getPurposeManager(web3j, gasProvider);
     }
 
-    public Consent newConsentContract(ClientTransactionManager transactionManager, String dataSubject, List<String> dataRecipients ) {
+    public CollectionConsent newConsentContract(ClientTransactionManager transactionManager, String dataController, List<String> dataRecipients) {
         List<BigInteger> defaultPurposes = new ArrayList<BigInteger>();
             defaultPurposes.add(new BigInteger("0"));
             defaultPurposes.add(new BigInteger("1"));
             defaultPurposes.add(new BigInteger("2"));
-        BigInteger duration = new BigInteger("100");
+        BigInteger duration = new BigInteger("1000000");
+        BigInteger data = new BigInteger( "4294967295");
 
         try {
-            Consent aux = Consent.deploy(web3j, transactionManager, gasProvider,
-                    dataSubject, dataRecipients, duration, defaultPurposes ).send();
+            CollectionConsent aux = CollectionConsent.deploy(web3j, transactionManager, gasProvider,
+                    dataController, dataRecipients, data, duration, defaultPurposes ).send();
             System.out.println( "Consent Contract Created"
                     + "\n\tTransaction Hash: " + aux.getTransactionReceipt().orElse(null).getTransactionHash()
                     + "\n\tContract address: " + aux.getContractAddress() );
@@ -74,7 +76,7 @@ public class ConsentManager {
         }
     }
 
-    public void grantConsent( Consent contract ){
+    public void grantConsent( CollectionConsent contract ){
         try{
             TransactionReceipt receipt = contract.grantConsent().send();
             //Add Transaction Gas to total Gas Used
@@ -85,7 +87,7 @@ public class ConsentManager {
         }
     }
 
-    public void revokeConsent( Consent contract ){
+    public void revokeConsent( CollectionConsent contract ){
         try{
             TransactionReceipt receipt = contract.revokeConsent().send();
             //Add Transaction Gas to total Gas Used
@@ -96,7 +98,7 @@ public class ConsentManager {
         }
     }
 
-    public void checkValidity( Consent contract ){
+    public void checkValidity( CollectionConsent contract ){
         try{
             if( contract.verify().send() )
                 System.out.println("Valid");
@@ -108,8 +110,31 @@ public class ConsentManager {
         }
     }
 
+    public void eraseData( CollectionConsent contract ){
+        try{
+            TransactionReceipt receipt = contract.eraseData().send();
+            //Add Transaction Gas to total Gas Used
+            gasUsed += receipt.getGasUsed().intValue();
+        }
+        catch (Exception e){
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    public void modifyData( CollectionConsent contract ){
+        BigInteger data = new BigInteger( "0094967295");
+        try {
+            TransactionReceipt receipt = contract.modifyData( data ).send();
+            //Add Transaction Gas to total Gas Used
+            gasUsed += receipt.getGasUsed().intValue();
+        }
+        catch (Exception e){
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
     //Complex revoke Consent
-    public void revokeConsentPurpose( Consent contract, BigInteger purpose ){
+    public void revokeConsentPurpose( CollectionConsent contract, BigInteger purpose ){
         try{
             TransactionReceipt receipt = contract.revokeConsentPurpose( purpose ).send();
             //Add Transaction Gas to total Gas Used
@@ -120,7 +145,7 @@ public class ConsentManager {
         }
     }
 
-    public void revokeConsentProcessor( Consent contract, String processor ){
+    public void revokeConsentProcessor( CollectionConsent contract, String processor ){
         try{
             TransactionReceipt receipt = contract.revokeConsentProcessor( processor ).send();
             //Add Transaction Gas to total Gas Used
@@ -133,25 +158,18 @@ public class ConsentManager {
 
     //getters
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public List<Purpose> getAllProcessorsPurposeSC( Consent contract, ClientTransactionManager transactionManager, BigInteger purpose ){
-        List<Purpose> purposeCList = new ArrayList<>();
-        try {
-            for( String processor : (List<String>) contract.getAllProcessors().send() ){
-                if( contract.getAllPurposesProcessor( processor ).send().contains( purpose ) ){
-                    purposeCList.add(
-                            Purpose.load( contract.getPurposeSC(processor, purpose).send(),
-                                    web3j, transactionManager, gasProvider ) );
-                }
-            }
-            return purposeCList;
+    //Get all Processing Consent SCs
+    public String getProcessingConsentSC( CollectionConsent contract, String processor ){
+        try{
+            return contract.getProcessingConsentSC( processor ).send();
         }
         catch (Exception e){
-            e.printStackTrace();
-            return null;
+            System.out.println("Error: " + e.getMessage());
+            return "";
         }
     }
 
-    public void getAllProcessors( Consent contract ){
+    public void getAllProcessors( CollectionConsent contract ){
         try{
             List<String> aux = contract.getAllProcessors( ).send();
             System.out.println( "Processors that operate over this SC: " );
@@ -164,11 +182,18 @@ public class ConsentManager {
         }
     }
 
-    public void getAllPurposes( Consent contract ){
+    //Get All Purposes
+    //getAllPurposes
+    public void getAllPurposes( CollectionConsent contract, ClientTransactionManager actor ){
         try{
-            List<BigInteger> aux = contract.getAllPurposes( ).send();
+            List<String> aux = contract.getAllProcessors( ).send();
+            List<BigInteger> allProcessingPurposes = null;
+            for (String processor : aux ) {
+                allProcessingPurposes.addAll( ProcessingConsent.load( contract.getProcessingConsentSC( processor ).send(), web3j, actor, gasProvider ).getPurposes().send() );
+            }
+            allProcessingPurposes = allProcessingPurposes.stream().distinct().collect(Collectors.toList());
             System.out.println( "Purposes for which DS's personal data is processed: " );
-            for (BigInteger purpose : aux ) {
+            for (BigInteger purpose : allProcessingPurposes ) {
                 System.out.println( "\t" + PURPOSE.values()[ purpose.intValue() ] );
             }
         }
@@ -177,32 +202,22 @@ public class ConsentManager {
         }
     }
 
-    public void getAllPurposesProcessor( Consent contract, String processor ){
+    //Get all Processors that has requested to process data for a specific processing purpose
+    //getAllProcessorsPurpose
+    public void getAllProcessorsPurpose( CollectionConsent contract, BigInteger purpose, ClientTransactionManager actor ){
         try{
-            List<BigInteger> aux = contract.getAllPurposesProcessor( processor ).send();
-            System.out.println( "Purposes for which Processor " + processor + " has permits to process DS's personal data: " );
-            for (BigInteger purpose : aux ) {
-                System.out.println( "\t" + PURPOSE.values()[ purpose.intValue() ] );
+            List<String> allProcessors = contract.getAllProcessors( ).send();
+            List<String> processors = null;
+            for (String processor : allProcessors ) {
+                if( ProcessingConsent.load( contract.getProcessingConsentSC( processor ).send(), web3j, actor, gasProvider
+                        ).getPurposes().send().contains( purpose ) )
+                    processors.add( processor );
             }
-        }
-        catch (Exception e){
-            System.out.println("Error: " + e.getMessage());
-        }
-    }
-
-    public void getAllProcessorsPurpose( Consent contract, BigInteger purpose ){
-        try{
-            if( !contract.getAllPurposes( ).send().contains( purpose) )
+            if( processors.isEmpty() )
                 System.out.println( "No processor is has permits to process DS's for this purpose");
             else{
-                List<String> aux = new ArrayList<>();
-                List<String> allProcessors = contract.getAllProcessors( ).send();
-                for (String processor : allProcessors ) {
-                    if( contract.getAllPurposesProcessor( processor ).send().contains(purpose) )
-                        aux.add( processor );
-                }
                 System.out.println( "Processor that have permit to process DS's for " + PURPOSE.values()[ purpose.intValue() ] + ": " );
-                for (String processor : aux ) {
+                for (String processor : processors ) {
                     System.out.println( "\t" + processor );
                 }
             }
@@ -212,12 +227,30 @@ public class ConsentManager {
         }
     }
 
-    public void getAllPurposesProcessors( Consent contract ){
+    //Get all Processing purposes that has requested a processor
+    //getAllPurposesProcessor
+    public void getAllPurposesProcessor( CollectionConsent contract, String processor, ClientTransactionManager actor ){
+        try{
+            List<BigInteger> aux = ProcessingConsent.load( contract.getProcessingConsentSC( processor ).send(), web3j, actor, gasProvider
+            ).getPurposes().send();
+            System.out.println( "Purposes for which Processor " + processor + " has requested to process DS's personal data: " );
+            for (BigInteger purpose : aux ) {
+                System.out.println( "\t" + PURPOSE.values()[ purpose.intValue() ] );
+            }
+        }
+        catch (Exception e){
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    //For all processors, get all requested processing purposes.
+    //getAllPurposesProcessors
+    public void getAllPurposesProcessors( CollectionConsent contract, ClientTransactionManager actor ){
         try{
             List<String> aux = contract.getAllProcessors( ).send();
-            System.out.println( "ALL PURPOSES FOR EACH PROCESSOR: " );
+            System.out.println( "ALL PROCESSING PURPOSES REQUESTED FOR EACH PROCESSOR: " );
             for (String processor : aux ) {
-                getAllPurposesProcessor( contract, processor);
+                getAllPurposesProcessor( contract, processor, actor);
             }
         }
         catch (Exception e){
@@ -226,12 +259,12 @@ public class ConsentManager {
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public Consent selectConsentContract( ClientTransactionManager transactionManager ){
-        if( consentContractList.isEmpty() ) return null;
+    public CollectionConsent selectConsentContract( ClientTransactionManager transactionManager ){
+        if( collectionConsentContractList.isEmpty() ) return null;
         while (true) {
-            System.out.println("Select a Consent Smart Contract: 0 - " + (consentContractList.size() - 1));
+            System.out.println("Select a Consent Smart Contract: 0 - " + (collectionConsentContractList.size() - 1));
             try {
-                return Consent.load( consentContractList.get(sn.nextInt()).getContractAddress(),
+                return CollectionConsent.load( collectionConsentContractList.get(sn.nextInt()).getContractAddress(),
                         web3j, transactionManager, gasProvider );
             } catch (Exception e) {
                 System.out.println("Insert a valid option");
@@ -239,10 +272,10 @@ public class ConsentManager {
         }
     }
 
-    public void operateOverConsent(ClientTransactionManager transactionManager, ActorsManager actors){
+    public void operateOverCollectionConsent(ClientTransactionManager transactionManager, ActorsManager actors){
         int option; String textInput;
         boolean end = false;
-        Consent consentContract = selectConsentContract(transactionManager);
+        CollectionConsent collectionConsentContract = selectConsentContract(transactionManager);
         while (!end) {
             System.out.println("1. Grant Consent");
             System.out.println("2. Revoke Consent");
@@ -255,7 +288,7 @@ public class ConsentManager {
             System.out.println("9. Get All Purposes from a Processor");
             System.out.println("10. Get All Processors that have permits over specific purpose");
             System.out.println("11. Get All Purposes and Processors");
-            System.out.println("12. Operate over existing Purpose Smart Contract");
+            System.out.println("12. Operate over existing Processing Consent Smart Contract");
             System.out.println("13. Select New Consent Smart Contract");
             System.out.println("14. Back");
             System.out.println("Select an option: ");
@@ -263,49 +296,51 @@ public class ConsentManager {
                 option = sn.nextInt();
                 switch (option) {
                     case 1:
-                        grantConsent( consentContract );
+                        grantConsent( collectionConsentContract );
                         break;
                     case 2:
-                        revokeConsent( consentContract );
+                        revokeConsent( collectionConsentContract );
                         break;
                     case 3:
                         System.out.println("Specify purpose: ");
                         option = sn.nextInt();
-                        revokeConsentPurpose( consentContract, BigInteger.valueOf( option ) );
+                        revokeConsentPurpose( collectionConsentContract, BigInteger.valueOf( option ) );
                         break;
                     case 4:
                         System.out.println("Specify processor's address: ");
-                        revokeConsentProcessor( consentContract, sn.next() );
+                        revokeConsentProcessor( collectionConsentContract, sn.next() );
                         break;
                     case 5:
-                        checkValidity( consentContract );
+                        checkValidity( collectionConsentContract );
                         break;
                     case 6:
-                        purposeManager.newPurpose( consentContract, actors.processors[rand.nextInt( actors.processors.length )] );
+                        purposeManager.newPurpose( collectionConsentContract,
+                                actors.processors[rand.nextInt( actors.processors.length )],
+                                new BigInteger( String.valueOf(rand.nextInt( CollectionConsentManager.PURPOSE.values().length )) ) );
                         break;
                     case 7:
-                        getAllProcessors( consentContract );
+                        getAllProcessors( collectionConsentContract );
                         break;
                     case 8:
-                        getAllPurposes( consentContract );
+                        getAllPurposes( collectionConsentContract, transactionManager );
                         break;
                     case 9:
                         System.out.println("Specify processor's address: ");
                         textInput = sn.next();
-                        getAllPurposesProcessor( consentContract, textInput );
+                        getAllPurposesProcessor( collectionConsentContract, textInput, transactionManager );
                         break;
                     case 10:
                         System.out.println("Specify purpose: ");
                         option = sn.nextInt();
-                        getAllProcessorsPurpose( consentContract, BigInteger.valueOf( option ) );
+                        getAllProcessorsPurpose( collectionConsentContract, BigInteger.valueOf( option ), transactionManager );
                         break;
                     case 11:
-                        getAllPurposesProcessors( consentContract );
+                        getAllPurposesProcessors( collectionConsentContract, transactionManager );
                         break;
                     case 12:
-                        purposeManager.operateOverPurpose( transactionManager, actors, consentContract.getContractAddress() );
+                        purposeManager.operateOverProcessingConsentSC( transactionManager, actors, collectionConsentContract.getContractAddress() );
                     case 13:
-                        consentContract = selectConsentContract(transactionManager);
+                        collectionConsentContract = selectConsentContract(transactionManager);
                         break;
                     case 14:
                         end = true;
@@ -324,12 +359,12 @@ public class ConsentManager {
         }
     }
 
-    public void operateOverConsentController(ClientTransactionManager transactionManager, ActorsManager actors){
+    public void operateOverCollectionConsentDS(ClientTransactionManager transactionManager, ActorsManager actors){
         int option; String textInput;
         boolean end = false;
         while (!end) {
-            System.out.println("1. Deploy new Consent Smart Contract");
-            System.out.println("2. Load existing Consent Smart Contract");
+            System.out.println("1. Deploy new Collection Consent Smart Contract");
+            System.out.println("2. Load existing Collection Consent Smart Contract");
             System.out.println("3. Operate over existing Consent Smart Contract");
             System.out.println("4. Back");
             System.out.println("Select an option: ");
@@ -338,16 +373,16 @@ public class ConsentManager {
                 switch (option) {
                     case 1:
                         //Deploy a new Consent Smart Contract
-                        consentContractList.add( newConsentContract(transactionManager, actors.dataSubject, actors.dataRecipients) );
+                        collectionConsentContractList.add( newConsentContract( transactionManager, actors.controller, actors.dataRecipients) );
                         break;
                     case 2:
                         System.out.println("Specify the contract address: ");
                         textInput = sn.next();
                         //Load an existing contract
-                        consentContractList.add(Consent.load(textInput, web3j, transactionManager, gasProvider));
+                        collectionConsentContractList.add( CollectionConsent.load( textInput, web3j, transactionManager, gasProvider) );
                         break;
                     case 3:
-                        operateOverConsent(transactionManager, actors);
+                        operateOverCollectionConsent(transactionManager, actors);
                         end = true;
                         break;
                     case 4:
@@ -364,4 +399,5 @@ public class ConsentManager {
             }
         }
     }
+
 }

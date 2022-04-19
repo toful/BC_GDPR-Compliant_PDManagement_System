@@ -1,5 +1,5 @@
 /**Personal Data Access Control System
- *ActorsManager class
+ * ActorsManager class
  *
  * Simple class that holds some actors to interact with SC using this system prototype
  *

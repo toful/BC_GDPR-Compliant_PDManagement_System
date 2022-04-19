@@ -14,8 +14,10 @@ BIN = target/
 all : 	
 	cd contracts/;	truffle compile; \
 	cd ..; mkdir $(JAVA); \
-	/home/toful/.web3j/web3j  truffle generate ./build/contracts/Purpose.json -o . -p src.main.java.contracts
-	/home/toful/.web3j/web3j  truffle generate ./build/contracts/Consent.json -o . -p src.main.java.contracts	
+	#/home/crises/.web3j/web3j  truffle generate ./build/contracts/ProcessingConsent.json -o . -p src.main.java.contracts
+	#/home/crises/.web3j/web3j  truffle generate ./build/contracts/CollectionConsent.json -o . -p src.main.java.contracts
+	/home/crises/.web3j/web3j generate truffle --truffle-json ./build/contracts/ProcessingConsent.json --outputDir . -p src.main.java.contracts
+	/home/crises/.web3j/web3j generate truffle --truffle-json ./build/contracts/CollectionConsent.json --outputDir . -p src.main.java.contracts
 	
 
 clean :

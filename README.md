@@ -1,14 +1,10 @@
-# BC_GDPR-Compliant_PDManagement_System
+# PD_AccessControlSystem
 
-[![License](https://img.shields.io/github/license/toful/BC_GDPR-Compliant_PDManagement_System?style=plastic)](https://github.com/toful/BC_GDPR-Compliant_PDManagement_System)
+[![License](https://img.shields.io/github/license/toful/PD_AccessControlSystem?style=plastic)](https://github.com/toful/PD_AccessControlSystem)
 
-Lightweight blockchain-based GDPR-compliant personal data management system, which provides public access immutable evidences showing the agreements between a Data Subject and a Service Provider about DS’s personal data.
+GDPR-Compliant Data Subjects' Personal Data Access Control System. System is implemeted using Smart Contracts deployed over the Blockchain technology. The project also includes a Java code to interact with these SCs.
 
 System has been tested on a Ganache local blockchain.
-
-We still need to manage how the "data" concept is managed. This value holds which data can be collected/processed, not the data itself, only the data categories.
-
-Current project is currently being developed on the [official repository](https://github.com/toful/PD_AccessControlSystem), which will remain private ultil the final release.
 
 ## Pre-requisites
 
@@ -82,6 +78,7 @@ To Compile the Contracts using Truffle, execute the following command inside con
 
 	truffle compile
 
+
 ## Deploy Smart Contracts
 First you need to init the Blockchain the Contracts are going to be deployed on:
 
@@ -94,11 +91,10 @@ Otherwise you can deploy them using truffle.
 ### Deploy Smart Contracts using the Java app
 To Deploy the Contracts using the Java app, first you need to create the Java wrappers to operate with them (these contracts must have been compiled before obtaining the wrappers):
 
-	web3j  truffle generate ./build/contracts/$CONTRACT_NAME$.json -o . -p src.main.java.contracts
+	web3j generate truffle --truffle-json ./build/contracts/$CONTRACT_NAME$.json --outputDir . -p src.main.java.contracts
+
 
 **Run the app.**
-
-You can also use the Makafile which compiles the Smart Contracts, creates the Java wrappers and locates them into the proper folder.
 
 ### Deploy Smart Contracts using Truffle
 Can deploy the Smart Contracts specified on the migrations/ folder files using:
