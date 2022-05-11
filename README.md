@@ -58,7 +58,7 @@ module.exports = {
 };:
 ```
 
-Optional: Create a new file under the migrations folder (migrations/2_deploy_contracts.js) specifying the SCs you want to deploy and with which arguments. Example:
+Optional: Create a new file under the migrations folder (migrations/1_deploy_contracts.js) specifying the SCs you want to deploy and with which arguments. Example:
 ```
 var Consent = artifacts.require("Consent");
 
@@ -131,7 +131,7 @@ Can also load already deployed contracts using:
 │  ├─Consent.sol 		Consent Smart Contract code
 │  ├─Purpose.sol 		Purpose Smart Contract code
 ├─migrations/ 			Directory for scriptable deployment files
-│  ├─2_deploy_contracts.js 		Deploys Consent SC
+│  ├─1_deploy_contracts.js 		Deploys Consent SC
 ├─test/ 				Directory for test files for testing your application and contracts
 ├─truffle-config.js 	Truffle configuration file
 ├─pom.xml 				Contains Java dependencies

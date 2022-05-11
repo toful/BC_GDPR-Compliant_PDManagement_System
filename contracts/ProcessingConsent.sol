@@ -18,15 +18,13 @@ contract ProcessingConsent {
         uint256 beginningDate;
         uint256 expirationDate;
         uint8[3] valid;     //DC - DS - DP
-        //bytes1[3];
     }
     mapping( uint => ProcessingPurposeStruct ) private purposes;
     
     uint[] private processingPurposes; 
 
-    //Not defined yet
-        //Enum are explicitly convertible to and from all integer type. 
-        //The options are represented by subsequent unsigned integer values starting from 0, in the order they are defined.
+    //Enum are explicitly convertible to and from all integer type. 
+    //The options are represented by subsequent unsigned integer values starting from 0, in the order they are defined.
     enum PURPOSE { ModelTraining, ModelTesting, Profiling, ImprovingService, Advertising }
     
 

@@ -16,7 +16,6 @@ contract CollectionConsent {
     address private controller;
     address[] private recipients;
 
-    //Not defined yet
     uint256 data;
 
     //Consent lifetime
